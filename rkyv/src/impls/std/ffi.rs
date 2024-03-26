@@ -1,4 +1,4 @@
-use core::{alloc::Layout, ptr};
+use core::{alloc::{Layout, LayoutError}, ptr};
 use std::{
     alloc,
     ffi::{CStr, CString},
@@ -8,14 +8,19 @@ use ptr_meta::Pointee;
 use rancor::Fallible;
 
 use crate::{
-    ffi::{ArchivedCString, CStringResolver},
-    primitive::ArchivedUsize,
-    ser::Writer,
-    Archive, ArchivePointee, ArchiveUnsized, Archived, ArchivedMetadata,
-    Deserialize, DeserializeUnsized, Portable, Serialize, SerializeUnsized,
+    ffi::{ArchivedCString, CStringResolver}, primitive::ArchivedUsize, ser::Writer, Archive, ArchivePointee, ArchiveUnsized, Archived, ArchivedMetadata, Deserialize, DeserializeUnsized, LayoutRaw, Portable, Serialize, SerializeUnsized
 };
 
 // CStr
+
+impl LayoutRaw for CStr {
+    #[inline]
+    fn layout_raw(
+        metadata: <Self as Pointee>::Metadata,
+    ) -> Result<Layout, LayoutError> {
+        Layout::array::<::std::os::raw::c_char>(metadata)
+    }
+}
 
 unsafe impl Portable for CStr {}
 
@@ -55,13 +60,11 @@ impl<D: Fallible + ?Sized> DeserializeUnsized<CStr, D>
     unsafe fn deserialize_unsized(
         &self,
         _: &mut D,
-        mut alloc: impl FnMut(Layout) -> *mut u8,
-    ) -> Result<*mut (), D::Error> {
+        out: *mut CStr,
+    ) -> Result<(), D::Error> {
         let slice = self.to_bytes_with_nul();
-        let bytes = alloc(Layout::array::<u8>(slice.len()).unwrap());
-        assert!(!bytes.is_null());
-        ptr::copy_nonoverlapping(slice.as_ptr(), bytes, slice.len());
-        Ok(bytes.cast())
+        ptr::copy_nonoverlapping(slice.as_ptr(), out.cast::<u8>(), slice.len());
+        Ok(())
     }
 
     #[inline]

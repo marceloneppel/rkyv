@@ -184,7 +184,7 @@ pub trait PoolingExt<E>: Pooling<E> {
     fn deserialize_shared<T, P, A>(
         &mut self,
         value: &T::Archived,
-        alloc: A,
+        out: *mut T,
     ) -> Result<*mut T, Self::Error>
     where
         T: ArchiveUnsized + Pointee + ?Sized,

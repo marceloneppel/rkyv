@@ -322,9 +322,9 @@ mod verify {
     use super::ArchivedRc;
     use crate::{
         validation::{
-            ArchiveContext, ArchiveContextExt, LayoutRaw, SharedContext,
+            ArchiveContext, ArchiveContextExt, SharedContext,
         },
-        ArchivePointee,
+        ArchivePointee, LayoutRaw,
     };
 
     unsafe impl<T, F, C> Verify<C> for ArchivedRc<T, F>
